@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtCore
+from optionsdialog import OptionsDialog
 
 class ChannelInfoWidget(QGroupBox):
     def __init__(self, parent=None):
@@ -82,7 +83,7 @@ class MultiColocMW(QDialog):
 
         return lbl
 
-    def buildcenterarea(self):    
+    def buildcenterarea(self):
         filescrollarea = QScrollArea()
         scrollablecontainer = QWidget()
 
@@ -101,15 +102,32 @@ class MultiColocMW(QDialog):
 
     def buildbottomarea(self):
         bottombox = QHBoxLayout()
-        
-        self._progressbar = QProgressBar()
-        bottombox.addWidget(self._progressbar)
-        
-        self._runbutton = QPushButton("Run")
-        bottombox.addWidget(self._runbutton)
-        self._runbutton.setFixedWidth(250)
+
+        bottombox.addWidget(QLabel("File extension"))
+
+        self._fileextensioninput = QLineEdit("tif")
+        self._fileextensioninput.setFixedWidth(75)
+
+        bottombox.addWidget(self._fileextensioninput)
+
+        optionsbutton = QPushButton("Options")
+        optionsbutton.clicked.connect(self.onoptions)
+        bottombox.addWidget(optionsbutton)
+
+        #self._progressbar = QProgressBar()
+        #bottombox.addWidget(self._progressbar)
+        bottombox.addStretch()
+
+        runbutton = QPushButton("Run")
+        bottombox.addWidget(runbutton)
+        runbutton.setFixedWidth(75)
 
         return bottombox
+
+    def onoptions(self):
+        dlg = OptionsDialog(self)
+        
+        dlg.exec_()
 
     def onaddchannel(self):
         self._fileinfolayout.insertWidget(
