@@ -7,6 +7,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5 import QtCore
 from optionsdialog import OptionsDialog
 
+
 class ChannelInfoWidget(qw.QGroupBox):
     """
     QtWidget, that holds controls to set up a channel.
@@ -45,19 +46,22 @@ class ChannelInfoWidget(qw.QGroupBox):
 
         self.setLayout(self._layout)
 
-
     def _onremove(self):
         """
         Handle click of "Remove this channel" button
         """
+
         self.deleteLater()
 
     def _onbrowse(self):
         """
         Handle click of "Browse..." button
         """
-        folder = str(qw.QFileDialog.getExistingDirectory(self, "Select Directory"))
+
+        folder = str(qw.QFileDialog.getExistingDirectory(
+            self, "Select Directory"))
         self._filetextbox.setText(folder)
+
 
 class MultiColocMW(qw.QDialog):
     """
@@ -113,6 +117,7 @@ class MultiColocMW(qw.QDialog):
         Returns:
             QWidget -- A widget for the center area
         """
+
         filescrollarea = qw.QScrollArea()
         scrollablecontainer = qw.QWidget()
 
@@ -153,8 +158,6 @@ class MultiColocMW(qw.QDialog):
         optionsbutton.clicked.connect(self._onoptions)
         bottombox.addWidget(optionsbutton)
 
-        #self._progressbar = QProgressBar()
-        #bottombox.addWidget(self._progressbar)
         bottombox.addStretch()
 
         runbutton = qw.QPushButton("Run")
@@ -167,6 +170,7 @@ class MultiColocMW(qw.QDialog):
         """
         Handles click of the options button
         """
+
         dlg = OptionsDialog(self)
 
         dlg.exec_()
@@ -175,7 +179,8 @@ class MultiColocMW(qw.QDialog):
         """
         Handles click of the "Add channel" button
         """
+
         self._fileinfolayout.insertWidget(
             self._fileinfolayout.count() - 1,
             ChannelInfoWidget()
-            )
+        )

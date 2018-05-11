@@ -5,6 +5,7 @@ Represets the options for MultiColoc
 import sys
 import PyQt5.QtWidgets as qw
 
+
 class OptionsDialog(qw.QDialog):
     """
     The options GUI for MultiColoc
@@ -43,17 +44,22 @@ class OptionsDialog(qw.QDialog):
             QWidget -- The statistics area
         """
 
-        groupbox = qw.QGroupBox("Statistics options - Select options to calculate")
+        groupbox = qw.QGroupBox(
+            "Statistics options - Select options to calculate"
+        )
 
         vbox = qw.QVBoxLayout()
 
         self._csvlocationbox = qw.QLineEdit()
-        self._csvlocationbox.setPlaceholderText("Specify a location to save statistics!")
+        self._csvlocationbox.setPlaceholderText(
+            "Specify a location to save statistics!"
+        )
+
         browsebutton = qw.QPushButton("Browse...")
         browsebutton.clicked.connect(self._savecsv)
 
         self._optioncontrols = {
-            option : qw.QCheckBox(option)
+            option: qw.QCheckBox(option)
             for option in self.AVAILABLESETTINGS
         }
 
@@ -83,6 +89,7 @@ class OptionsDialog(qw.QDialog):
             filter="*.csv"
         )
         self._csvlocationbox.setText(file)
+
 
 if __name__ == '__main__':
     APP = qw.QApplication(sys.argv)
