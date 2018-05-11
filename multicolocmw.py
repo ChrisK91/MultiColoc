@@ -1,37 +1,40 @@
-from PyQt5.QtWidgets import *
+"""
+Provides classes for the main window of the MultiColoc tool
+"""
+
+import PyQt5.QtWidgets as qw
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtCore
 from optionsdialog import OptionsDialog
 
-class ChannelInfoWidget(QGroupBox):
+class ChannelInfoWidget(qw.QGroupBox):
+    """
+    QtWidget, that holds controls to set up a channel.
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setTitle("Channel info")
-        self._layout = QVBoxLayout()
+        self._layout = qw.QVBoxLayout()
 
-        removebutton = QPushButton("Remove this channel")
-        removebutton.clicked.connect(self.onremove)
+        removebutton = qw.QPushButton("Remove this channel")
+        removebutton.clicked.connect(self._onremove)
 
-        self._filetextbox = QLineEdit()
-        browsefilebutton = QPushButton("Browse...")
-        browsefilebutton.clicked.connect(self.onbrowse)
+        self._filetextbox = qw.QLineEdit()
+        browsefilebutton = qw.QPushButton("Browse...")
+        browsefilebutton.clicked.connect(self._onbrowse)
 
-        #
-        #  Folder : ------ : Browse
-        #  Distinct part: ---- : Remove channel
-        #
+        firstrow = qw.QHBoxLayout()
+        secondrow = qw.QHBoxLayout()
+        thirdrow = qw.QHBoxLayout()
 
-        firstrow = QHBoxLayout()
-        secondrow = QHBoxLayout()
-        thirdrow = QHBoxLayout()
-
-        firstrow.addWidget(QLabel("Folder:"))
+        firstrow.addWidget(qw.QLabel("Folder:"))
         firstrow.addWidget(self._filetextbox)
         firstrow.addWidget(browsefilebutton)
 
-        secondrow.addWidget(QLabel("Channel identifier:"))
-        secondrow.addWidget(QLineEdit())
+        secondrow.addWidget(qw.QLabel("Channel identifier:"))
+        secondrow.addWidget(qw.QLineEdit())
 
         thirdrow.addStretch()
         thirdrow.addWidget(removebutton)
@@ -42,14 +45,25 @@ class ChannelInfoWidget(QGroupBox):
 
         self.setLayout(self._layout)
 
-    def onremove(self):
+
+    def _onremove(self):
+        """
+        Handle click of "Remove this channel" button
+        """
         self.deleteLater()
 
-    def onbrowse(self):
-        folder = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+    def _onbrowse(self):
+        """
+        Handle click of "Browse..." button
+        """
+        folder = str(qw.QFileDialog.getExistingDirectory(self, "Select Directory"))
         self._filetextbox.setText(folder)
 
-class MultiColocMW(QDialog):
+class MultiColocMW(qw.QDialog):
+    """
+    Class for the main window
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -64,17 +78,25 @@ class MultiColocMW(QDialog):
             QtCore.Qt.WindowMinMaxButtonsHint
         )
 
-        vbox = QVBoxLayout()
-        vbox.addWidget(self.buildtoparea())
+        vbox = qw.QVBoxLayout()
+        vbox.addWidget(self._buildtoparea())
 
-        vbox.addWidget(self.buildcenterarea())
+        vbox.addWidget(self._buildcenterarea())
 
-        vbox.addLayout(self.buildbottomarea())
+        vbox.addLayout(self._buildbottomarea())
 
         self.setLayout(vbox)
 
-    def buildtoparea(self):
-        lbl = QLabel(
+    def _buildtoparea(self):
+        """
+        Creates the top area containing:
+            - Usage instructions
+
+        Returns:
+            QWidget -- A widget containing the top area
+        """
+
+        lbl = qw.QLabel(
             "1. Add a channel information for every channel you want to analyze\n"
             "2. Specify the channel unique names\n"
             "3. Set output options as needed"
@@ -83,16 +105,23 @@ class MultiColocMW(QDialog):
 
         return lbl
 
-    def buildcenterarea(self):
-        filescrollarea = QScrollArea()
-        scrollablecontainer = QWidget()
+    def _buildcenterarea(self):
+        """
+        Build the center area, containing:
+            - A scroll area with a button to add channel infos
 
-        self._fileinfolayout = QVBoxLayout()
+        Returns:
+            QWidget -- A widget for the center area
+        """
+        filescrollarea = qw.QScrollArea()
+        scrollablecontainer = qw.QWidget()
+
+        self._fileinfolayout = qw.QVBoxLayout()
         self._fileinfolayout.addStretch()
         scrollablecontainer.setLayout(self._fileinfolayout)
 
-        addchannelinfobutton = QPushButton("Add channel info")
-        addchannelinfobutton.clicked.connect(self.onaddchannel)
+        addchannelinfobutton = qw.QPushButton("Add channel info")
+        addchannelinfobutton.clicked.connect(self._onaddchannel)
         self._fileinfolayout.insertWidget(0, addchannelinfobutton)
 
         filescrollarea.setWidgetResizable(True)
@@ -100,40 +129,53 @@ class MultiColocMW(QDialog):
 
         return filescrollarea
 
-    def buildbottomarea(self):
-        bottombox = QHBoxLayout()
+    def _buildbottomarea(self):
+        """
+        Build the bottom area, containing:
+            - A input for the file extension
+            - A options button
+            - The run button
 
-        bottombox.addWidget(QLabel("File extension"))
+        Returns:
+            QHBoxLayout -- A layout holding controls
+        """
 
-        self._fileextensioninput = QLineEdit("tif")
+        bottombox = qw.QHBoxLayout()
+
+        bottombox.addWidget(qw.QLabel("File extension"))
+
+        self._fileextensioninput = qw.QLineEdit("tif")
         self._fileextensioninput.setFixedWidth(75)
 
         bottombox.addWidget(self._fileextensioninput)
 
-        optionsbutton = QPushButton("Options")
-        optionsbutton.clicked.connect(self.onoptions)
+        optionsbutton = qw.QPushButton("Options")
+        optionsbutton.clicked.connect(self._onoptions)
         bottombox.addWidget(optionsbutton)
 
         #self._progressbar = QProgressBar()
         #bottombox.addWidget(self._progressbar)
         bottombox.addStretch()
 
-        runbutton = QPushButton("Run")
+        runbutton = qw.QPushButton("Run")
         bottombox.addWidget(runbutton)
         runbutton.setFixedWidth(75)
 
         return bottombox
 
-    def onoptions(self):
+    def _onoptions(self):
+        """
+        Handles click of the options button
+        """
         dlg = OptionsDialog(self)
-        
+
         dlg.exec_()
 
-    def onaddchannel(self):
+    def _onaddchannel(self):
+        """
+        Handles click of the "Add channel" button
+        """
         self._fileinfolayout.insertWidget(
             self._fileinfolayout.count() - 1,
             ChannelInfoWidget()
             )
-
-    def onremovechild(self, widget):
-        self._fileinfolayout.removeWidget(widget)

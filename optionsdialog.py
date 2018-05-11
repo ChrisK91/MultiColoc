@@ -1,9 +1,15 @@
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QIcon
-from PyQt5 import QtCore
-import sys
+"""
+Represets the options for MultiColoc
+"""
 
-class OptionsDialog(QDialog):
+import sys
+import PyQt5.QtWidgets as qw
+
+class OptionsDialog(qw.QDialog):
+    """
+    The options GUI for MultiColoc
+    """
+
     AVAILABLESETTINGS = [
         "Area in px",
         "Area in px that overlaps with other channels",
@@ -22,34 +28,40 @@ class OptionsDialog(QDialog):
 
         self.resize(400, 400)
 
-        vlayout = QVBoxLayout()
+        vlayout = qw.QVBoxLayout()
 
-        vlayout.addWidget(self.buildstatisticsarea())
+        vlayout.addWidget(self._buildstatisticsarea())
 
         vlayout.addStretch()
 
         self.setLayout(vlayout)
 
-    def buildstatisticsarea(self):
-        groupbox = QGroupBox("Statistics options - Select options to calculate")
+    def _buildstatisticsarea(self):
+        """Create the statistics area, based on "AVAILABLESETTINGS"
 
-        vbox = QVBoxLayout()
+        Returns:
+            QWidget -- The statistics area
+        """
 
-        self._csvlocationbox = QLineEdit()
+        groupbox = qw.QGroupBox("Statistics options - Select options to calculate")
+
+        vbox = qw.QVBoxLayout()
+
+        self._csvlocationbox = qw.QLineEdit()
         self._csvlocationbox.setPlaceholderText("Specify a location to save statistics!")
-        browsebutton = QPushButton("Browse...")
+        browsebutton = qw.QPushButton("Browse...")
         browsebutton.clicked.connect(self._savecsv)
 
         self._optioncontrols = {
-            option : QCheckBox(option)
+            option : qw.QCheckBox(option)
             for option in self.AVAILABLESETTINGS
         }
 
-        for w in self._optioncontrols.values():
-            w.setChecked(True)
-            vbox.addWidget(w)
+        for widget in self._optioncontrols.values():
+            widget.setChecked(True)
+            vbox.addWidget(widget)
 
-        hbox = QHBoxLayout()
+        hbox = qw.QHBoxLayout()
 
         hbox.addWidget(self._csvlocationbox)
         hbox.addWidget(browsebutton)
@@ -60,16 +72,20 @@ class OptionsDialog(QDialog):
         return groupbox
 
     def _savecsv(self):
-        file, filter = QFileDialog.getSaveFileName(
+        """
+        Displays save dialog for the CSV
+        """
+
+        file, _ = qw.QFileDialog.getSaveFileName(
             self,
             "Save statistics to...",
             "",
-            filter = "*.csv"
+            filter="*.csv"
         )
         self._csvlocationbox.setText(file)
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    mw = OptionsDialog()
-    mw.show()
-    sys.exit(app.exec_())
+    APP = qw.QApplication(sys.argv)
+    MW = OptionsDialog()
+    MW.show()
+    sys.exit(APP.exec_())
