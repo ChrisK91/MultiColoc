@@ -1,6 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication
-from multicolocmw import MultiColocMW
+from gui.multicolocmw import MultiColocMW
 
 def main():
     APP = QApplication(sys.argv)

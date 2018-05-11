@@ -6,7 +6,7 @@ from collections import namedtuple
 import PyQt5.QtWidgets as qw
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtCore
-from optionsdialog import OptionsDialog
+from gui.optionsdialog import OptionsDialog
 
 Options = namedtuple(
     "Options",
