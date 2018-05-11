@@ -4,6 +4,8 @@ Represets the options for MultiColoc
 
 import sys
 import PyQt5.QtWidgets as qw
+from PyQt5.QtGui import QIntValidator
+from PyQt5 import QtCore
 
 
 class OptionsDialog(qw.QDialog):
@@ -11,31 +13,114 @@ class OptionsDialog(qw.QDialog):
     The options GUI for MultiColoc
     """
 
-    AVAILABLESETTINGS = [
-        "Area in px",
-        "Area in px that overlaps with other channels",
-        "Average intensity",
-        "Maximum intensity",
-        "Center of mass position",
-    ]
+    AVAILABLESETTINGS = {
+        "area_px" : "Area in px",
+        "area_overlap_px" : "Area in px that overlaps with other channels",
+        "intensity_avg" : "Average intensity",
+        "intensity_max" : "Maximum intensity",
+        "com" : "Center of mass position",
+    }
 
     def __init__(self, parent=None):
         super().__init__(parent)
 
         self.setWindowTitle('Configure output options')
 
-        self.setMinimumWidth(400)
-        self.setMinimumHeight(400)
+        self.setMinimumWidth(500)
+        self.setMinimumHeight(500)
 
-        self.resize(400, 400)
+        self.setWindowFlags(
+            self.windowFlags() |
+            QtCore.Qt.CustomizeWindowHint
+        )
+
+        self.setWindowFlags(
+            self.windowFlags() &
+            ~QtCore.Qt.WindowCloseButtonHint
+        )
 
         vlayout = qw.QVBoxLayout()
 
         vlayout.addWidget(self._buildstatisticsarea())
+        vlayout.addWidget(self._buildsavemaskarea())
+        vlayout.addWidget(self._builddetectionarea())
 
         vlayout.addStretch()
 
+        buttons = qw.QDialogButtonBox(
+            qw.QDialogButtonBox.Ok | qw.QDialogButtonBox.Cancel,
+            QtCore.Qt.Horizontal, self)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+
+        vlayout.addWidget(buttons)
+
         self.setLayout(vlayout)
+
+    def _buildsavemaskarea(self):
+        groupbox = qw.QGroupBox(
+            "Mask output settings"
+        )
+
+        hbox = qw.QHBoxLayout()
+
+        self._maskfoldercontrol = qw.QLineEdit()
+        self._maskfoldercontrol.setPlaceholderText(
+            "Specify a folder, to save masks"
+        )
+
+        browsebutton = qw.QPushButton("Browse...")
+        browsebutton.clicked.connect(self._savemasks)
+
+        hbox.addWidget(self._maskfoldercontrol)
+        hbox.addWidget(browsebutton)
+
+        groupbox.setLayout(hbox)
+
+        return groupbox
+
+    def _builddetectionarea(self):
+        """
+        Build the groupbox for detection settings
+
+        Returns:
+            QWidget -- The detections settings control
+        """
+
+        groupbox = qw.QGroupBox(
+            "Object detection settings"
+        )
+
+        vbox = qw.QVBoxLayout()
+
+        connectivityhelp = qw.QLabel(
+            "By default, horizontally and vertically adjacent pixels are "
+            "combined into on object/feature when checking for overlap.\n"
+            "Use the option below, to also group pixels that are diagonally adjacent."
+        )
+        connectivityhelp.setWordWrap(True)
+
+        self._diagonalconnectivity = qw.QCheckBox(
+            "Use diagonal connectivity"
+        )
+
+        thresholdbox = qw.QHBoxLayout()
+        thresholdbox.addWidget(qw.QLabel("Threshold (above):"))
+
+        self._thresholdinput = qw.QLineEdit("0")
+
+        validator = QIntValidator()
+        self._thresholdinput.setValidator(validator)
+        self._thresholdinput.setPlaceholderText("0")
+
+        thresholdbox.addWidget(self._thresholdinput)
+
+        groupbox.setLayout(vbox)
+        vbox.addLayout(thresholdbox)
+        vbox.addWidget(connectivityhelp)
+        vbox.addWidget(self._diagonalconnectivity)
+
+        return groupbox
 
     def _buildstatisticsarea(self):
         """Create the statistics area, based on "AVAILABLESETTINGS"
@@ -52,15 +137,15 @@ class OptionsDialog(qw.QDialog):
 
         self._csvlocationbox = qw.QLineEdit()
         self._csvlocationbox.setPlaceholderText(
-            "Specify a location to save statistics!"
+            "Specify a file, to calculacte statistics"
         )
 
         browsebutton = qw.QPushButton("Browse...")
         browsebutton.clicked.connect(self._savecsv)
 
         self._optioncontrols = {
-            option: qw.QCheckBox(option)
-            for option in self.AVAILABLESETTINGS
+            key: qw.QCheckBox(option)
+            for key, option in self.AVAILABLESETTINGS.items()
         }
 
         for widget in self._optioncontrols.values():
@@ -89,6 +174,15 @@ class OptionsDialog(qw.QDialog):
             filter="*.csv"
         )
         self._csvlocationbox.setText(file)
+
+    def _savemasks(self):
+        """
+        Display save dialog for folder
+        """
+
+        folder = str(qw.QFileDialog.getExistingDirectory(
+            self, "Select Directory"))
+        self._maskfoldercontrol.setText(folder)
 
 
 if __name__ == '__main__':

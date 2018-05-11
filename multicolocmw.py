@@ -1,19 +1,31 @@
 """
 Provides classes for the main window of the MultiColoc tool
 """
+from collections import namedtuple
 
 import PyQt5.QtWidgets as qw
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtCore
 from optionsdialog import OptionsDialog
 
+Options = namedtuple(
+    "Options",
+    [
+        "csvfile",
+        "statistics",
+        "maskfolder",
+        "diagnoalconnectivity",
+        "threshold"
+    ])
+
+ChannelInfo = namedtuple("ChannelInfo", "folder, unique")
 
 class ChannelInfoWidget(qw.QGroupBox):
     """
     QtWidget, that holds controls to set up a channel.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, channellist, parent=None):
         super().__init__(parent)
 
         self.setTitle("Channel info")
@@ -35,7 +47,9 @@ class ChannelInfoWidget(qw.QGroupBox):
         firstrow.addWidget(browsefilebutton)
 
         secondrow.addWidget(qw.QLabel("Channel identifier:"))
-        secondrow.addWidget(qw.QLineEdit())
+
+        self._idtextbox = qw.QLineEdit()
+        secondrow.addWidget(self._idtextbox)
 
         thirdrow.addStretch()
         thirdrow.addWidget(removebutton)
@@ -45,12 +59,14 @@ class ChannelInfoWidget(qw.QGroupBox):
         self._layout.addLayout(thirdrow)
 
         self.setLayout(self._layout)
+        channellist.append(self)
+        self._channellist = channellist
 
     def _onremove(self):
         """
         Handle click of "Remove this channel" button
         """
-
+        self._channellist.remove(self)
         self.deleteLater()
 
     def _onbrowse(self):
@@ -62,11 +78,26 @@ class ChannelInfoWidget(qw.QGroupBox):
             self, "Select Directory"))
         self._filetextbox.setText(folder)
 
+    def channelinfo(self):
+        """Generate channel info for the input
+        
+        Returns:
+            ChannelInfo -- a named touple with the user configuration
+        """
+
+        return ChannelInfo(
+            self._filetextbox.text(),
+            self._idtextbox.text()
+        )
+
 
 class MultiColocMW(qw.QDialog):
     """
     Class for the main window
     """
+
+    _options = None
+    _channels = list()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -161,10 +192,48 @@ class MultiColocMW(qw.QDialog):
         bottombox.addStretch()
 
         runbutton = qw.QPushButton("Run")
+        runbutton.clicked.connect(self._run)
         bottombox.addWidget(runbutton)
         runbutton.setFixedWidth(75)
 
         return bottombox
+
+    def _run(self):
+        if not self._options:
+            mbox = qw.QMessageBox(self)
+            mbox.setIcon(qw.QMessageBox.Information)
+            mbox.setText("Please specify your options first")
+            mbox.setWindowTitle("Information")
+            mbox.setStandardButtons(qw.QMessageBox.Ok)
+            mbox.exec_()
+
+            self._onoptions()
+
+            return -1
+
+        channels = [item.channelinfo() for item in self._channels]
+
+        if len(channels) < 2:
+            mbox = qw.QMessageBox(self)
+            mbox.setIcon(qw.QMessageBox.Critical)
+            mbox.setWindowTitle("Error")
+            mbox.setText("Please specify at least two channels")
+            mbox.setStandardButtons(qw.QMessageBox.Cancel)
+            mbox.exec_()
+
+            return -1
+
+    def _storeoptions(self, dlg):
+        self._options = Options(
+            dlg._csvlocationbox.text(),
+            [
+                key for key, value in dlg._optioncontrols.items()
+                if value.isChecked()
+            ],
+            dlg._maskfoldercontrol.text(),
+            dlg._diagonalconnectivity.isChecked(),
+            int(dlg._thresholdinput.text()) if dlg._thresholdinput.text() else 0
+        )
 
     def _onoptions(self):
         """
@@ -173,7 +242,8 @@ class MultiColocMW(qw.QDialog):
 
         dlg = OptionsDialog(self)
 
-        dlg.exec_()
+        if dlg.exec_():
+            self._storeoptions(dlg)
 
     def _onaddchannel(self):
         """
@@ -182,5 +252,5 @@ class MultiColocMW(qw.QDialog):
 
         self._fileinfolayout.insertWidget(
             self._fileinfolayout.count() - 1,
-            ChannelInfoWidget()
+            ChannelInfoWidget(self._channels)
         )
