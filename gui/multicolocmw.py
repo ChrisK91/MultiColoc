@@ -1,24 +1,12 @@
 """
 Provides classes for the main window of the MultiColoc tool
 """
-from collections import namedtuple
-
 import PyQt5.QtWidgets as qw
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtCore
 from gui.optionsdialog import OptionsDialog
-
-Options = namedtuple(
-    "Options",
-    [
-        "csvfile",
-        "statistics",
-        "maskfolder",
-        "diagnoalconnectivity",
-        "threshold"
-    ])
-
-ChannelInfo = namedtuple("ChannelInfo", "folder, unique")
+from gui.workerdialog import WorkerDialog
+from structures import Options, ChannelInfo
 
 class ChannelInfoWidget(qw.QGroupBox):
     """
@@ -36,11 +24,17 @@ class ChannelInfoWidget(qw.QGroupBox):
 
         self._filetextbox = qw.QLineEdit()
         browsefilebutton = qw.QPushButton("Browse...")
-        browsefilebutton.clicked.connect(self._onbrowse)
+        browsefilebutton.clicked.connect(lambda x: self._onbrowse(self._filetextbox))
+
+        self._datafilebox = qw.QLineEdit()
+        self._datafilebox.setPlaceholderText("Leave empty to ignore")
+        browsedatabutton = qw.QPushButton("Browse...")
+        browsedatabutton.clicked.connect(lambda x: self._onbrowse(self._datafilebox))
 
         firstrow = qw.QHBoxLayout()
         secondrow = qw.QHBoxLayout()
         thirdrow = qw.QHBoxLayout()
+        fourthrow = qw.QHBoxLayout()
 
         firstrow.addWidget(qw.QLabel("Folder:"))
         firstrow.addWidget(self._filetextbox)
@@ -48,15 +42,20 @@ class ChannelInfoWidget(qw.QGroupBox):
 
         secondrow.addWidget(qw.QLabel("Channel identifier:"))
 
+        thirdrow.addWidget(qw.QLabel("Data files:"))
+        thirdrow.addWidget(self._datafilebox)
+        thirdrow.addWidget(browsedatabutton)
+
         self._idtextbox = qw.QLineEdit()
         secondrow.addWidget(self._idtextbox)
 
-        thirdrow.addStretch()
-        thirdrow.addWidget(removebutton)
+        fourthrow.addStretch()
+        fourthrow.addWidget(removebutton)
 
         self._layout.addLayout(firstrow)
         self._layout.addLayout(secondrow)
         self._layout.addLayout(thirdrow)
+        self._layout.addLayout(fourthrow)
 
         self.setLayout(self._layout)
         channellist.append(self)
@@ -69,14 +68,14 @@ class ChannelInfoWidget(qw.QGroupBox):
         self._channellist.remove(self)
         self.deleteLater()
 
-    def _onbrowse(self):
+    def _onbrowse(self, textbox):
         """
         Handle click of "Browse..." button
         """
 
         folder = str(qw.QFileDialog.getExistingDirectory(
             self, "Select Directory"))
-        self._filetextbox.setText(folder)
+        textbox.setText(folder)
 
     def channelinfo(self):
         """Generate channel info for the input
@@ -87,7 +86,8 @@ class ChannelInfoWidget(qw.QGroupBox):
 
         return ChannelInfo(
             self._filetextbox.text(),
-            self._idtextbox.text()
+            self._idtextbox.text(),
+            self._datafilebox.text()
         )
 
 
@@ -133,8 +133,11 @@ class MultiColocMW(qw.QDialog):
 
         lbl = qw.QLabel(
             "1. Add a channel information for every channel you want to analyze\n"
-            "2. Specify the channel unique names\n"
-            "3. Set output options as needed"
+            "a) \"Folder\" points to the place where your images are stored\n"
+            "b) \"Channel identifier\" is the part of the name, that is unique for thath channel\n"
+            "c) If you specify \"Data files\", intensity values from these images will be used to calculate statistics\n"
+            "\n2. Set output options as needed\n"
+            "\n3. Run the analysis\n"
         )
         lbl.setWordWrap(True)
 
@@ -199,6 +202,7 @@ class MultiColocMW(qw.QDialog):
         return bottombox
 
     def _run(self):
+        # net valid options to run
         if not self._options:
             mbox = qw.QMessageBox(self)
             mbox.setIcon(qw.QMessageBox.Information)
@@ -213,6 +217,7 @@ class MultiColocMW(qw.QDialog):
 
         channels = [item.channelinfo() for item in self._channels]
 
+        # need at least two channels to run
         if len(channels) < 2:
             mbox = qw.QMessageBox(self)
             mbox.setIcon(qw.QMessageBox.Critical)
@@ -222,6 +227,25 @@ class MultiColocMW(qw.QDialog):
             mbox.exec_()
 
             return -1
+        else:
+            # check for channels without folders
+            for channel in channels:
+                if not channel.folder:
+                    mbox = qw.QMessageBox(self)
+                    mbox.setIcon(qw.QMessageBox.Critical)
+                    mbox.setWindowTitle("Error")
+                    mbox.setText("At least one channel has no file location specified!")
+                    mbox.setStandardButtons(qw.QMessageBox.Cancel)
+                    mbox.show()
+                    return -1
+
+        # We have a valid configuration if we end up here
+        # The workerdialog handles the rest
+
+        wd = WorkerDialog(self)
+        wd.show()
+        wd.performwork(self._options, channels)
+
 
     def _storeoptions(self, dlg):
         self._options = Options(
@@ -232,7 +256,8 @@ class MultiColocMW(qw.QDialog):
             ],
             dlg._maskfoldercontrol.text(),
             dlg._diagonalconnectivity.isChecked(),
-            int(dlg._thresholdinput.text()) if dlg._thresholdinput.text() else 0
+            int(dlg._thresholdinput.text()) if dlg._thresholdinput.text() else 0,
+            self._fileextensioninput.text()
         )
 
     def _onoptions(self):

@@ -1,3 +1,6 @@
 __pycache__/
 .vscode
 build
+stats/
+testfiles/
+testfiles_samename/

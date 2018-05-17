@@ -16,8 +16,8 @@ class OptionsDialog(qw.QDialog):
     AVAILABLESETTINGS = {
         "area_px" : "Area in px",
         "area_overlap_px" : "Area in px that overlaps with other channels",
-        "intensity_avg" : "Average intensity",
-        "intensity_max" : "Maximum intensity",
+        "intensity_avg" : "Mean intensity",
+        "intensity_max" : "Maximum and minimum intensity",
         "com" : "Center of mass position",
     }
 
@@ -137,7 +137,7 @@ class OptionsDialog(qw.QDialog):
 
         self._csvlocationbox = qw.QLineEdit()
         self._csvlocationbox.setPlaceholderText(
-            "Specify a file, to calculacte statistics"
+            "Specify a folder, to calculacte statistics"
         )
 
         browsebutton = qw.QPushButton("Browse...")
@@ -167,13 +167,11 @@ class OptionsDialog(qw.QDialog):
         Displays save dialog for the CSV
         """
 
-        file, _ = qw.QFileDialog.getSaveFileName(
+        folder = qw.QFileDialog.getExistingDirectory(
             self,
             "Save statistics to...",
-            "",
-            filter="*.csv"
         )
-        self._csvlocationbox.setText(file)
+        self._csvlocationbox.setText(folder)
 
     def _savemasks(self):
         """
