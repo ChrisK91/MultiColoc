@@ -1,2 +1,5 @@
 [MASTER]
 extension-pkg-whitelist=PyQt5,numpy
+
+[MESSAGES CONTROL]
+disable: C0103,C0413

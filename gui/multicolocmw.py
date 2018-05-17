@@ -79,7 +79,7 @@ class ChannelInfoWidget(qw.QGroupBox):
 
     def channelinfo(self):
         """Generate channel info for the input
-        
+
         Returns:
             ChannelInfo -- a named touple with the user configuration
         """
@@ -135,7 +135,8 @@ class MultiColocMW(qw.QDialog):
             "1. Add a channel information for every channel you want to analyze\n"
             "a) \"Folder\" points to the place where your images are stored\n"
             "b) \"Channel identifier\" is the part of the name, that is unique for thath channel\n"
-            "c) If you specify \"Data files\", intensity values from these images will be used to calculate statistics\n"
+            "c) If you specify \"Data files\", intensity values from "
+            "these images will be used to calculate statistics\n"
             "\n2. Set output options as needed\n"
             "\n3. Run the analysis\n"
         )

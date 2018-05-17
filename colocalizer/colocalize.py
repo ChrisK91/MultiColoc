@@ -1,3 +1,7 @@
+"""
+Module to spatially colocalize files
+"""
+
 if __name__ == '__main__':
     # Change to parent directory for imports
     # Debugging purposes!
@@ -5,25 +9,34 @@ if __name__ == '__main__':
     import sys
     import inspect
 
-    CURRENT_DIR = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    CURRENT_DIR = os.path.dirname(os.path.abspath(
+        inspect.getfile(inspect.currentframe())))
     PARENT_DIR = os.path.dirname(CURRENT_DIR)
     sys.path.insert(0, PARENT_DIR)
 
     DEBUG = True
 
-from skimage.io import imread
-from colocalizer.helper_functions import save_binary_image, get_append_or_write
-from structures import Options
-import skimage.measure
-import numpy as np
 import os.path
 import csv
 import datetime
+from colocalizer.helper_functions import save_binary_image, get_append_or_write
+from structures import Options
+import skimage.measure
+from skimage.io import imread
+import numpy as np
 
 _callback = None
 _currentrun = None
 
+
 def spatial_colocalize(fileinfos, options: Options):
+    """Performs spatial colocalization of the given files
+
+    Arguments:
+        fileinfos {iterable of ChannelInfo} -- [description]
+        options {Options} -- [description]
+    """
+
     assert _currentrun, "please call new_run before starting a analysis"
 
     data = list()
@@ -35,16 +48,19 @@ def spatial_colocalize(fileinfos, options: Options):
         dataimg = imread(datafile) if datafile else None
 
         data.append(
-            (image, dataimg, maskoutput, channelname) # todo: turn into named touple?
+            # todo: turn into named touple?
+            (image, dataimg, maskoutput, channelname)
         )
 
-    images = next(zip(*data)) # first element of each tuple is the image
-    masks = [image > options.threshold for image in images] # these are not the final masks!
+    images = next(zip(*data))  # first element of each tuple is the image
+    # these are not the final masks!
+    masks = [image > options.threshold for image in images]
 
     connectivity = 2 if options.diagnoalconnectivity else 1
-    labeled_masks = [skimage.measure.label(m, connectivity=connectivity) for m in masks]
+    labeled_masks = [skimage.measure.label(
+        m, connectivity=connectivity) for m in masks]
 
-    overlapping_areas = (np.ones_like(masks[0]) == 1) # Full true array
+    overlapping_areas = (np.ones_like(masks[0]) == 1)  # Full true array
 
     for mask in masks:
         overlapping_areas = np.logical_and(overlapping_areas, mask)
@@ -55,18 +71,20 @@ def spatial_colocalize(fileinfos, options: Options):
         ids = np.unique(labeled_masks[index][overlapping_areas])
         _log("{0} objects in \"{1}\"".format(len(ids), fileinfos[index][3]))
 
-        selection_mask = np.in1d(labeled_masks[index], ids).reshape(images[index].shape)
+        selection_mask = np.in1d(
+            labeled_masks[index], ids).reshape(images[index].shape)
         # selections masks selects features, that overlap with other features
 
         mask_filename = data[index][2]
-        if mask_filename: # third entry of the tuple contains a filename, if mask should be saved
+        if mask_filename:  # third entry of the tuple contains a filename, if mask should be saved
             _log("Saving mask as {0}".format(mask_filename))
             save_binary_image(mask_filename, selection_mask)
 
         selection_masks.append(selection_mask)
 
     # selection mask labels
-    mask_labels = [skimage.measure.label(mask, connectivity=connectivity) for mask in selection_masks]
+    mask_labels = [skimage.measure.label(
+        mask, connectivity=connectivity) for mask in selection_masks]
 
     if options.csvfolder:
         _log("Calculating statistics")
@@ -79,7 +97,8 @@ def spatial_colocalize(fileinfos, options: Options):
             _log("Working on statistics from {0}".format(data[index][3]))
 
             current_labels = mask_labels[index]
-            regionprops = skimage.measure.regionprops(current_labels, intensity_image=data[index][1], cache=False)
+            regionprops = skimage.measure.regionprops(
+                current_labels, intensity_image=data[index][1], cache=False)
 
             for region in regionprops:
                 csvrow = dict()
@@ -91,7 +110,7 @@ def spatial_colocalize(fileinfos, options: Options):
                 if "area_px" in options.statistics:
                     #_log("Calculating particle areas")
                     csvrow["area_px"] = region.area
-                
+
                 if "intensity_mean" in options.statistics:
                     #_log("Calculating intensity avg")
                     try:
@@ -111,28 +130,33 @@ def spatial_colocalize(fileinfos, options: Options):
                         csvrow["intensity_max"] = "No data image specified!"
 
                 if "com" in options.statistics:
-                    csvrow["com_unweighted"] = region.centroid                   
+                    csvrow["com_unweighted"] = region.centroid
                     csvrow["com_unweighted_local"] = region.local_centroid
                     try:
                         csvrow["com_weighted"] = region.weighted_centroid
-                        csvrow["com_weighted_local"] = region.weighted_local_centroid 
+                        csvrow["com_weighted_local"] = region.weighted_local_centroid
                     except AttributeError:
-                        pass # no data file specified
+                        pass  # no data file specified
 
                 if "area_overlap_px" in options.statistics:
                     for comparisonchannel in [i for i in range(0, len(masks)) if i != index]:
                         own_id = region.label
                         own_selection = mask_labels[index] == own_id
 
-                        comparison_label_mask = np.array(labeled_masks[comparisonchannel])
-                        comparison_label_mask[np.logical_not(own_selection)] = 0
+                        comparison_label_mask = np.array(
+                            labeled_masks[comparisonchannel])
+                        comparison_label_mask[np.logical_not(
+                            own_selection)] = 0
 
-                        overlappingregions = skimage.measure.regionprops(comparison_label_mask, cache=False)
+                        overlappingregions = skimage.measure.regionprops(
+                            comparison_label_mask, cache=False)
 
                         cumulative_overlap = 0
 
-                        minimal_overlapping_area = np.logical_and(comparison_label_mask, overlapping_areas)
-                        minimal_overlapping_size = np.count_nonzero(minimal_overlapping_area)
+                        minimal_overlapping_area = np.logical_and(
+                            comparison_label_mask, overlapping_areas)
+                        minimal_overlapping_size = np.count_nonzero(
+                            minimal_overlapping_area)
 
                         csvrow["minimum_overlapping_area"] = minimal_overlapping_size
 
@@ -143,24 +167,33 @@ def spatial_colocalize(fileinfos, options: Options):
                             detailedoverlapcsvrow["source_id"] = region.label
                             detailedoverlapcsvrow["comparison_channel"] = data[comparisonchannel][3]
                             detailedoverlapcsvrow["comparison_id"] = overlap.label
-                            detailedoverlapcsvrow["overlapping_area_betwwen_both_channels"] = overlap.area
+                            detailedoverlapcsvrow["area_in_both_channels"] = overlap.area
 
                             cumulative_overlap += overlap.area
                             overlap_csv_lines.append(detailedoverlapcsvrow)
 
-                        csvrow["cumulative_overlap_{0}_{1}".format(data[index][3], data[comparisonchannel][3])] = cumulative_overlap
+                        csvrow["cumulative_overlap_{0}_{1}".format(
+                            data[index][3], data[comparisonchannel][3])] = cumulative_overlap
                 standard_csv_lines.append(csvrow)
-        
+
         # finally: save csv data
-        standardfile = os.path.join(options.csvfolder, "statistics_{0:%Y-%m-%d %H-%M-%S}.csv".format(_currentrun))
-        overlapfile = os.path.join(options.csvfolder, "overlaps_{0:%Y-%m-%d %H-%M-%S}.csv".format(_currentrun))
+        standardfile = os.path.join(
+            options.csvfolder, "statistics_{0:%Y-%m-%d %H-%M-%S}.csv".format(_currentrun))
+        overlapfile = os.path.join(
+            options.csvfolder, "overlaps_{0:%Y-%m-%d %H-%M-%S}.csv".format(_currentrun))
 
         _writestats(standardfile, standard_csv_lines)
         _writestats(overlapfile, overlap_csv_lines)
 
+
 def new_run():
-    global _currentrun 
+    """
+    Sets the datetime for the statistic files
+    """
+
+    global _currentrun
     _currentrun = datetime.datetime.now()
+
 
 def _writestats(filename, stats):
     mode = get_append_or_write(filename)
@@ -176,11 +209,13 @@ def _writestats(filename, stats):
             writer.writeheader()
 
         for line in stats:
-            writer.writerow(line)        
+            writer.writerow(line)
+
 
 def _log(msg):
     if _callback:
         _callback(msg)
+
 
 if __name__ == '__main__':
     _callback = print
@@ -188,16 +223,18 @@ if __name__ == '__main__':
     new_run()
 
     spatial_colocalize([
-        ('testfiles_samename/ch1/ (1).tif', 'testfiles_samename/ch1/ (1).tif', None, "ch1"),
-        ('testfiles_samename/ch2/ (1).tif', 'testfiles_samename/ch2/ (1).tif', None, "ch2")
+        ('testfiles_samename/ch1/ (1).tif',
+         'testfiles_samename/ch1/ (1).tif', None, "ch1"),
+        ('testfiles_samename/ch2/ (1).tif',
+         'testfiles_samename/ch2/ (1).tif', None, "ch2")
     ], Options(
         "stats/",
         [
-        "area_px",
-        "area_overlap_px",
-        "intensity_avg",
-        "intensity_max",
-        "com",
+            "area_px",
+            "area_overlap_px",
+            "intensity_avg",
+            "intensity_max",
+            "com",
         ],
         None,
         False,

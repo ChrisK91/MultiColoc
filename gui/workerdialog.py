@@ -1,11 +1,27 @@
+"""
+The workerdialog shows progress about the colocalization
+analysis. This file contains a worker, which handles the
+underlying work. This worker is run in a seperate thread
+that is started from the main dialog
+"""
+
+import logging
+import os
 import sys
 import PyQt5.QtWidgets as qw
 from PyQt5 import QtCore
-import logging
-import os
 import colocalizer.colocalize as coloc
 
+
 class Worker(QtCore.QObject):
+    """
+    The worker collectes files and hands them over to the
+    colocalization functions
+
+    Arguments:
+        QtCore  -- parent
+    """
+
     # Signals to write log messages
     info = QtCore.pyqtSignal(str)
     warning = QtCore.pyqtSignal(str)
@@ -17,14 +33,23 @@ class Worker(QtCore.QObject):
     progressMax = QtCore.pyqtSignal(int)
     progressUpdate = QtCore.pyqtSignal(int)
 
+    # Signal emited when work is done or canceled
     done = QtCore.pyqtSignal()
 
-    _abort = False
+    # Flag to indicate that work should be canceled
+    __abort = False
 
-    def __init__(self, id: int, options, channels):
+    def __init__(self, id_: int, options, channels):
+        """Constructor
+
+        Arguments:
+            id_ {int} -- the id of the worker
+            options {sharedstructures.Options} -- user specified options
+            channels {sharedstructures.Channels} -- the channels specified by the user
+        """
+
         super().__init__()
-        self.__id = id
-        self.__abort = False
+        self.__id = id_
 
         self._options = options
         self._channels = channels
@@ -33,18 +58,28 @@ class Worker(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def abort(self):
+        """
+        Sets the abort flag
+        """
+
         # self.info.emit("Abort flag set")
         self.__abort = True
 
     @QtCore.pyqtSlot()
     def work(self):
+        """
+        Performs colocalization analysis with the settings
+        set when constructing
+        """
+
         self.info.emit("Analysis started")
         self.info.emit("---------------")
         self.info.emit("Gathering files:")
         filelist = self._collectfiles()
         self.info.emit("---------------")
-        self.info.emit("Done scanning files. Found {0} matching images".format(len(filelist)))
-        
+        self.info.emit(
+            "Done scanning files. Found {0} matching images".format(len(filelist)))
+
         self.progressMin.emit(0)
         self.progressMax.emit(len(filelist))
 
@@ -61,8 +96,8 @@ class Worker(QtCore.QObject):
 
             progress += 1
             self.progressUpdate.emit(progress)
-            self.info.emit("Processing {0} of {1}".format(progress, len(filelist)))
-            QtCore.QThread.sleep(10)
+            self.info.emit("Processing {0} of {1}".format(
+                progress, len(filelist)))
 
             coloc.spatial_colocalize(matchingfiles, self._options)
 
@@ -78,19 +113,17 @@ class Worker(QtCore.QObject):
 
         return None
 
-    def _getchannelfolderornone(self, channelnumber, unique, file = None):
+    def _getchannelfolderornone(self, channelnumber, unique, file=None):
         if self._options.maskfolder:
             if unique:
                 return os.path.join(self._options.maskfolder, unique, file)
-            else:
-                return os.path.join(self._options.maskfolder, "Channel_{0}".format(channelnumber), file)
-        else:
-            return None
+            return os.path.join(self._options.maskfolder, "Channel_{0}".format(channelnumber), file)
+        return None
 
     def _collectfiles(self):
         referencechannel, *otherchannels = self._channels
 
-        filelist = list() # final list, contains list with corresponding files
+        filelist = list()  # final list, contains list with corresponding files
 
         for file in os.listdir(referencechannel.folder):
             qw.QApplication.instance().processEvents()
@@ -105,44 +138,56 @@ class Worker(QtCore.QObject):
                 # get datafile, display warning if datafolder is set and file does not exist
                 datafile = None
                 if referencechannel.datafolder:
-                    datafile = self._getdatafileornone(file, referencechannel.datafolder)
+                    datafile = self._getdatafileornone(
+                        file, referencechannel.datafolder)
                     if datafile:
                         self.info.emit("with data file")
 
-                channelcounter = 1 # keeps count to name output masks, if no unique parts are specified
-                maskfolder = self._getchannelfolderornone(channelcounter, referencechannel.unique, file)
+                channelcounter = 1
+                # keeps count to name output masks, if no unique parts are specified
+
+                maskfolder = self._getchannelfolderornone(
+                    channelcounter, referencechannel.unique, file)
 
                 referencefile = (
                     os.path.join(referencechannel.folder, file),
                     datafile,
                     maskfolder,
-                    referencechannel.unique if referencechannel.unique else "Channel {0}".format(channelcounter)
+                    referencechannel.unique if referencechannel.unique else "Channel {0}".format(
+                        channelcounter)
                 )
 
-                otherfiles = list() # todo: refactor in function
+                otherfiles = list()  # todo: refactor in function
                 for channel in otherchannels:
                     channelcounter += 1
-                    inferredname = file.replace(referencechannel.unique, channel.unique)
+                    inferredname = file.replace(
+                        referencechannel.unique, channel.unique)
                     absolute = os.path.join(channel.folder, inferredname)
 
                     if not os.path.isfile(absolute):
-                        self.critical.emit("The expected file called '{0}' does not exist. Aborting...".format(absolute))
+                        self.critical.emit(
+                            "The expected file called '{0}' does not exist."
+                            "Aborting...".format(absolute))
                     else:
-                        self.info.emit("Corresponding: '{0}'".format(inferredname))
+                        self.info.emit(
+                            "Corresponding: '{0}'".format(inferredname))
 
                     datafile = None
                     if channel.datafolder:
-                        datafile = self._getdatafileornone(inferredname, channel.datafolder)
+                        datafile = self._getdatafileornone(
+                            inferredname, channel.datafolder)
                         if datafile:
                             self.info.emit("with data file")
 
-                    channelfolder = self._getchannelfolderornone(channelcounter, channel.unique, inferredname)
+                    channelfolder = self._getchannelfolderornone(
+                        channelcounter, channel.unique, inferredname)
 
                     otherfiles.append((
                         absolute,
                         datafile,
                         channelfolder,
-                        channel.unique if channel.unique else "Channel {0}".format(channelcounter)
+                        channel.unique if channel.unique else "Channel {0}".format(
+                            channelcounter)
                     ))
 
                 filelist.append(
@@ -150,12 +195,17 @@ class Worker(QtCore.QObject):
                         referencefile,
                         *otherfiles
                     ]
-                )      
+                )
                 # End of processing matching files
 
         return filelist
 
+
 class QPlainTextEditLogger(logging.Handler, QtCore.QObject):
+    """
+    Represents a control, that can display python logging messages
+    """
+
     def __init__(self, parent):
         super().__init__()
 
@@ -164,18 +214,33 @@ class QPlainTextEditLogger(logging.Handler, QtCore.QObject):
 
     def emit(self, record):
         msg = self.format(record)
-        self.widget.append(msg) 
+        self.widget.append(msg)
 
     def write(self, m):
+        """
+        Not implemented
+        """
+
         pass
 
+
 class WorkerDialog(qw.QDialog):
+    """
+    QDialog to display information about the work that is
+    currently done. Work is handled by a seperate thread
+    """
+
     _thread = None
     _worker = None
 
     _running = True
 
     def __init__(self, parent=None):
+        """
+        Constructor. You propably want to call .performwork after
+        showing this dialog to actually start work.
+        """
+
         super().__init__(parent)
         self.setWindowTitle('Analysis running...')
 
@@ -195,19 +260,21 @@ class WorkerDialog(qw.QDialog):
         layout = qw.QVBoxLayout()
 
         self._progressbar = qw.QProgressBar()
-        #self._progressbar.setTextVisible(False)
+        # self._progressbar.setTextVisible(False)
         self._progressbar.setMaximum(0)
         self._progressbar.setValue(0)
 
         self._textlog = QPlainTextEditLogger(self)
 
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s:\t %(message)s')
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s:\t %(message)s')
         self._textlog.setFormatter(formatter)
 
         logging.getLogger().addHandler(self._textlog)
         logging.getLogger().setLevel(logging.DEBUG)
 
-        buttons = qw.QDialogButtonBox(qw.QDialogButtonBox.Cancel, QtCore.Qt.Horizontal, self)
+        buttons = qw.QDialogButtonBox(
+            qw.QDialogButtonBox.Cancel, QtCore.Qt.Horizontal, self)
         buttons.rejected.connect(self._canceloperations)
 
         self.closebutton = qw.QPushButton("Close")
@@ -223,26 +290,56 @@ class WorkerDialog(qw.QDialog):
     def _canceloperations(self):
         if self._thread:
             self._worker.abort()
-            logging.info("Abort requested. Operations will stop after next files are done.")
+            logging.info(
+                "Abort requested. Operations will stop after next files are done.")
 
     @QtCore.pyqtSlot(str)
-    def loginfo(self, str):
-        logging.info(str)
+    def loginfo(self, msg):
+        """Display a information message
+
+        Arguments:
+            msg {str} -- the message
+        """
+
+        logging.info(msg)
 
     @QtCore.pyqtSlot(str)
-    def logwarning(self, str):
-        logging.warning(str)
+    def logwarning(self, msg):
+        """Display a warning
+
+        Arguments:
+            msg {str} -- the message
+        """
+
+        logging.warning(msg)
 
     @QtCore.pyqtSlot(str)
-    def logerror(self, str):
-        logging.error(str)
+    def logerror(self, msg):
+        """Display an error
+
+        Arguments:
+            msg {str} -- the message
+        """
+
+        logging.error(msg)
 
     @QtCore.pyqtSlot(str)
-    def logcritical(self, str):
-        logging.critical(str)
+    def logcritical(self, msg):
+        """Display a critical error
+
+        Arguments:
+            msg {str} -- the message
+        """
+
+        logging.critical(msg)
 
     @QtCore.pyqtSlot()
     def workdone(self):
+        """
+        Slot to handle a signal from the worker, that
+        work has finished
+        """
+
         if self._thread:
             self._thread.quit()
             self._thread.wait()
@@ -256,6 +353,13 @@ class WorkerDialog(qw.QDialog):
             logging.info("Work finished.")
 
     def performwork(self, options, channels):
+        """Start work for the dialog
+
+        Arguments:
+            options {structures.Options} -- options
+            channels {structures.Channels} -- the user specified channels
+        """
+
         self._running = True
         self.closebutton.setEnabled(False)
         worker = Worker(1, options, channels)
@@ -263,8 +367,8 @@ class WorkerDialog(qw.QDialog):
         thread.setObjectName("worker_thread")
 
         self._thread = thread # Prevent GC
-        self._worker = worker
-        
+        self._worker = worker # Prevent GC
+
         worker.moveToThread(thread)
 
         worker.info.connect(self.loginfo)
@@ -281,10 +385,11 @@ class WorkerDialog(qw.QDialog):
         thread.started.connect(worker.work)
         thread.start()
 
+
 if __name__ == '__main__':
     from multicolocmw import Options, ChannelInfo
 
-    options = Options(
+    test_options = Options(
         "test.csv",
         ["area_px"],
         "",
@@ -293,7 +398,7 @@ if __name__ == '__main__':
         ".tif"
     )
 
-    channels = [
+    test_channels = [
         ChannelInfo("testfiles/ch1", "ch1", "data_ch1_nonexisting"),
         ChannelInfo("testfiles/ch2", "ch2", ""),
         ChannelInfo("testfiles/ch3_and_ch4", "ch3", "nonexisting"),
@@ -303,5 +408,5 @@ if __name__ == '__main__':
     APP = qw.QApplication(sys.argv)
     MW = WorkerDialog()
     MW.show()
-    MW.performwork(options, channels)
+    MW.performwork(test_options, test_channels)
     sys.exit(APP.exec_())
