@@ -3,8 +3,9 @@ Main file to run the MultiColo application
 """
 
 import sys
-from PyQt5.QtWidgets import QApplication
-from gui.multicolocmw import MultiColocMW
+from PyQt5.QtWidgets import QApplication, QSplashScreen
+from PyQt5.QtGui import QPixmap
+import PyQt5.QtCore as qc
 
 
 def main():
@@ -13,8 +14,13 @@ def main():
     """
 
     APP = QApplication(sys.argv)
+    splash = QSplashScreen(QPixmap('files/splash.png'))
+    splash.show()
+
+    from gui.multicolocmw import MultiColocMW
     MW = MultiColocMW()
     MW.show()
+    splash.hide()
     sys.exit(APP.exec_())
 
 

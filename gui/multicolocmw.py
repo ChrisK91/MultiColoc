@@ -103,7 +103,7 @@ class MultiColocMW(qw.QDialog):
         super().__init__(parent)
 
         self.setWindowTitle('MultiColocalization Toolkit')
-        self.setWindowIcon(QIcon('icon.ico'))
+        self.setWindowIcon(QIcon('files/icon.ico'))
 
         self.setMinimumWidth(600)
         self.setMinimumHeight(600)
