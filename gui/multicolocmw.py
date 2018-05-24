@@ -114,7 +114,7 @@ class MultiColocMW(qw.QDialog):
         )
 
         vbox = qw.QVBoxLayout()
-        vbox.addWidget(self._buildtoparea())
+        vbox.addLayout(self._buildtoparea())
 
         vbox.addWidget(self._buildcenterarea())
 
@@ -128,8 +128,10 @@ class MultiColocMW(qw.QDialog):
             - Usage instructions
 
         Returns:
-            QWidget -- A widget containing the top area
+            QLayout -- A layout containing the top area
         """
+
+        vbox = qw.QVBoxLayout()
 
         lbl = qw.QLabel(
             "1. Add a channel information for every channel you want to analyze\n"
@@ -142,7 +144,13 @@ class MultiColocMW(qw.QDialog):
         )
         lbl.setWordWrap(True)
 
-        return lbl
+        vbox.addWidget(lbl)
+
+        link = qw.QLabel("Documentation available at <a href=\"https://multicoloc.readthedocs.io/\">https://multicoloc.readthedocs.io/</a>")
+        link.setOpenExternalLinks(True)
+        vbox.addWidget(link)
+
+        return vbox
 
     def _buildcenterarea(self):
         """
