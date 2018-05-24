@@ -4,3 +4,4 @@ build
 stats/
 testfiles/
 testfiles_samename/
+docs/_build
