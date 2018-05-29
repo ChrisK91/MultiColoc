@@ -15,7 +15,7 @@ class OptionsDialog(qw.QDialog):
 
     AVAILABLESETTINGS = {
         "area_px" : "Area in px",
-        "area_overlap_px" : "Area in px that overlaps with other channels",
+        "area_overlap_px" : "Area in px that overlaps with other channels, distance between COM of overlapping objects, angle of COM",
         "intensity_avg" : "Mean intensity",
         "intensity_max" : "Maximum and minimum intensity",
         "com" : "Center of mass position",

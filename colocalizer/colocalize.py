@@ -1,7 +1,7 @@
 """
 Module to spatially colocalize files
 """
-
+DEBUG = False
 if __name__ == '__main__':
     # Change to parent directory for imports
     # Debugging purposes!
@@ -19,7 +19,7 @@ if __name__ == '__main__':
 import os.path
 import csv
 import datetime
-from colocalizer.helper_functions import save_binary_image, get_append_or_write
+from colocalizer.helper_functions import save_binary_image, get_append_or_write, distance, angle
 from structures import Options
 import skimage.measure
 from skimage.io import imread
@@ -139,26 +139,59 @@ def spatial_colocalize(fileinfos, options: Options):
                         pass  # no data file specified
 
                 if "area_overlap_px" in options.statistics:
+                    # Area overlapping in all channels
+                    minimal_overlapping_area = 0
+
                     for comparisonchannel in [i for i in range(0, len(masks)) if i != index]:
                         own_id = region.label
                         own_selection = mask_labels[index] == own_id
 
-                        comparison_label_mask = np.array(
+                        comparison_ids = np.array(
                             labeled_masks[comparisonchannel])
-                        comparison_label_mask[np.logical_not(
+
+                        print(comparison_ids)
+
+                        comparison_ids[np.logical_not(
                             own_selection)] = 0
 
-                        overlappingregions = skimage.measure.regionprops(
-                            comparison_label_mask, cache=False)
+                        # comparison_ids now contains ids present in both channels
+                        ids_to_select = np.unique(comparison_ids)
+
+                        # now create the final label mask, since the above solution cuts of
+                        # areas not in both channels!
+
+                        comparison_label_mask = np.in1d(
+                            labeled_masks[comparisonchannel], ids_to_select).reshape(images[index].shape)
+
+                        comparison_labels = np.array(labeled_masks[comparisonchannel])
+                        comparison_labels[np.logical_not(comparison_label_mask)] = 0
+
+                        if DEBUG:
+                            print(comparison_labels)
+
+                        # todo: implement data image
+                        overlappingregions = None
+
+                        if data[comparisonchannel][1]:
+                            overlappingregions = skimage.measure.regionprops(
+                                comparison_labels,
+                                intensity_image=data[comparisonchannel][1],
+                                cache=False)
+                        else:
+                            overlappingregions = skimage.measure.regionprops(
+                                comparison_labels,
+                                cache=False)
 
                         cumulative_overlap = 0
+
+                        if DEBUG:
+                            print("Comparing")
+                            print(comparison_label_mask)
 
                         minimal_overlapping_area = np.logical_and(
                             comparison_label_mask, overlapping_areas)
                         minimal_overlapping_size = np.count_nonzero(
                             minimal_overlapping_area)
-
-                        csvrow["minimum_overlapping_area"] = minimal_overlapping_size
 
                         for overlap in overlappingregions:
                             detailedoverlapcsvrow = dict()
@@ -169,11 +202,37 @@ def spatial_colocalize(fileinfos, options: Options):
                             detailedoverlapcsvrow["comparison_id"] = overlap.label
                             detailedoverlapcsvrow["area_in_both_channels"] = overlap.area
 
+                            # calculate distances
+                            distance_unweighted = distance(
+                                region.centroid, overlap.centroid)
+                            angle_unweighted = angle(
+                                region.centroid, overlap.centroid)
+
+                            distance_weighted = "No data file specified"
+                            angle_weighted = "No data file specified"
+
+                            detailedoverlapcsvrow["distance_unweighted"] = distance_unweighted
+                            detailedoverlapcsvrow["angle_unweighted"] = angle_unweighted
+
+                            try:
+                                distance_weighted = distance(
+                                    region.weighted_centroid, overlap.weighted_centroid)
+                                angle_weighted = angle(
+                                    region.weighted_centroid, overlap.weighted_centroid)
+                            except AttributeError:
+                                pass
+
+                            detailedoverlapcsvrow["distance_weighted"] = distance_weighted
+                            detailedoverlapcsvrow["angle_weighted"] = angle_weighted
+
                             cumulative_overlap += overlap.area
                             overlap_csv_lines.append(detailedoverlapcsvrow)
 
                         csvrow["cumulative_overlap_{0}_{1}".format(
                             data[index][3], data[comparisonchannel][3])] = cumulative_overlap
+
+                    
+                    csvrow["minimum_overlapping_area"] = minimal_overlapping_size
                 standard_csv_lines.append(csvrow)
 
         # finally: save csv data
@@ -224,16 +283,16 @@ if __name__ == '__main__':
 
     spatial_colocalize([
         ('testfiles_samename/ch1/ (1).tif',
-         'testfiles_samename/ch1/ (1).tif', None, "ch1"),
+         None, None, "ch1"),
         ('testfiles_samename/ch2/ (1).tif',
-         'testfiles_samename/ch2/ (1).tif', None, "ch2")
+         None, None, "ch2")
     ], Options(
         "stats/",
         [
             "area_px",
             "area_overlap_px",
-            "intensity_avg",
-            "intensity_max",
+            # "intensity_avg",
+            # "intensity_max",
             "com",
         ],
         None,
