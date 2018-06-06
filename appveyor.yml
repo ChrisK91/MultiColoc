@@ -6,14 +6,13 @@ environment:
 
 install:
 - cmd: set PATH=%CONDA%;%CONDA%/Scripts;%CONDA%/Library/bin;%PATH%
-- cmd: pip install pynsist
-- cmd: conda env update
+- pip install pynsist
+- conda env update
 test_script:
 - cmd: activate MultiColoc
 - cmd: pytest --junitxml ./unittests.xml
-- ps: |
-  $wc = New-Object 'System.Net.WebClient'
-  $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\unittests.xml))
+- ps: $wc = New-Object 'System.Net.WebClient'
+- ps: $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\unittests.xml))
 
 build_script:
 - cmd: pynsist install.cfg
