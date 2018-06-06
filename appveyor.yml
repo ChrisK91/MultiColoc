@@ -7,8 +7,7 @@ environment:
 install:
 - cmd: set PATH=%CONDA%;%CONDA%/Scripts;%CONDA%/Library/bin;%PATH%
 - cmd: pip install pynsist
-- cmd: conda install --file environment.yml
-
+- cmd: conda env update
 test_script:
 - cmd: "C:/Python36-x64/Scripts/py.test"
 
