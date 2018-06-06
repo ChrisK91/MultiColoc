@@ -1,10 +1,10 @@
 """Helper functions to show and save images
 """
 import os
+import math
 from skimage.viewer import ImageViewer
 from skimage.io import imsave
 from skimage import img_as_uint
-import math
 
 def show_image(image):
     """Displays an image
@@ -72,4 +72,9 @@ def angle(p0, p1):
     """
 
     radians = math.atan2(p1[0] - p0[0], p1[1] - p0[1])
-    return math.degrees(radians)
+    angle_deg = math.degrees(radians)
+
+    if angle_deg < 0: # workaround for -90 degress
+        angle_deg = angle_deg + 360
+
+    return angle_deg

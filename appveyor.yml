@@ -1,7 +1,11 @@
 version: 0.1.{build}
 
 install:
-- cmd: pip install pynsist
+- cmd: pip install pynsist pytest
+- cmd: conda install --file environment.yml
+
+test_script:
+- cmd: "C:/Python36-x64/Scripts/py.test"
 
 build_script:
 - cmd: pynsist install.cfg
