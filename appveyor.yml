@@ -9,8 +9,8 @@ install:
 - cmd: pip install pynsist
 - cmd: conda env update
 test_script:
-- cmd: "activate MultiColoc"
-- cmd: "pytest --junitxml .\unittests.xml"
+- cmd: activate MultiColoc
+- cmd: pytest --junitxml ./unittests.xml
 - ps: |
   $wc = New-Object 'System.Net.WebClient'
   $wc.UploadFile("https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path .\unittests.xml))
