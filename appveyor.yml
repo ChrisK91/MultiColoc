@@ -1,7 +1,12 @@
 version: 0.1.{build}
 
+environment:
+- PYTHON: "C:\\Python36-x64"
+- CONDA: "C:\\Miniconda36-x64"
+
 install:
-- cmd: pip install pynsist pytest
+- cmd: set PATH=%CONDA%;%CONDA%/Scripts;%CONDA%/Library/bin;%PATH%
+- cmd: pip install pynsist
 - cmd: conda install --file environment.yml
 
 test_script:
