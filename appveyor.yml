@@ -9,7 +9,8 @@ install:
 - cmd: pip install pynsist
 - cmd: conda env update
 test_script:
-- cmd: "C:/Python36-x64/Scripts/py.test"
+- cmd: "activate MultiColoc"
+- cmd: "pytest"
 
 build_script:
 - cmd: pynsist install.cfg
