@@ -1,8 +1,8 @@
 version: 0.1.{build}
 
 environment:
-- PYTHON: "C:\\Python36-x64"
-- CONDA: "C:\\Miniconda36-x64"
+  PYTHON: "C:\\Python36-x64"
+  CONDA: "C:\\Miniconda36-x64"
 
 install:
 - cmd: set PATH=%CONDA%;%CONDA%/Scripts;%CONDA%/Library/bin;%PATH%
