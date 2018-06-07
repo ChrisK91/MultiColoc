@@ -21,6 +21,7 @@ def test_mask_generation(tmpdir):
     expected_second = imread("tests/testfiles/expected/Test Cases-1.tif")
     expected_third = imread("tests/testfiles/expected/Test Cases-2.tif")
 
+    # Masks will have uint32 max as True, expected masks have 255
     assert_array_equal(imread(str(tmpdir.join("1.tif"))) > 0, expected_first > 0)
     assert_array_equal(imread(str(tmpdir.join("2.tif"))) > 0, expected_second > 0)
     assert_array_equal(imread(str(tmpdir.join("3.tif"))) > 0, expected_third > 0)

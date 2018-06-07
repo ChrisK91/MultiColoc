@@ -9,6 +9,7 @@ MultiColoc is a spatial colocalization tool, that can work with a multiple chann
    introduction
    installation
    requirements
+   statistics
 
 Indices and tables
 ==================

@@ -142,6 +142,7 @@ def spatial_colocalize(fileinfos, options: Options):
                     # Area overlapping in all channels
                     minimal_overlapping_area = 0
 
+                    # todo: filter reverse overlaps
                     for comparisonchannel in [i for i in range(0, len(masks)) if i != index]:
                         own_id = region.label
                         own_selection = mask_labels[index] == own_id
