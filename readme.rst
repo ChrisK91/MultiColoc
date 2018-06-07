@@ -5,4 +5,4 @@ MultiColoc is a spatial colocalization tool, that can work with a multiple chann
 
 Documentation is available at http://multicoloc.readthedocs.io/
 
-[![Build status](https://ci.appveyor.com/api/projects/status/aeri9lrd658d453s?retina=true)](https://ci.appveyor.com/project/ChrisK91/multicoloc)
+[![Build status](https://ci.appveyor.com/api/projects/status/aeri9lrd658d453s?retina=true](https://ci.appveyor.com/project/ChrisK91/multicoloc)
