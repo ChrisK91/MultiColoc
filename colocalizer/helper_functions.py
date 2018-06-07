@@ -23,6 +23,7 @@ def save_binary_image(filename, image):
         filename {str} -- the filename to save to, folders will be created
         image {ndarray} -- the image data
     """
+    assert isinstance(filename, str), "filename should be a str!"
 
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     imsave(filename, img_as_uint(image))
